@@ -1,0 +1,21 @@
+[
+  {
+    "category": "Metadata",
+    "description": "Browse and read comics, manga, and books from Komga with reading progress sync. Enriches locally-scanned Jellyfin items with metadata and cover images from your Komga server.",
+    "guid": "b3c4d5e6-a1f0-4c9d-8e7b-6a9e8d4f3c2b",
+    "imageUrl": "",
+    "name": "Komga",
+    "overview": "Integrates Jellyfin with a self-hosted Komga server. Provides metadata enrichment, cover images, and bidirectional reading progress sync.",
+    "owner": "SirFfej",
+    "versions": [
+      {
+        "changelog": "Initial release.",
+        "checksum": "REPLACE_WITH_MD5_OF_RELEASE_ZIP",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.0/Jellyfin.Plugin.Komga_1.0.0.0.zip",
+        "targetAbi": "10.10.0.0",
+        "timestamp": "2026-04-02T00:00:00Z",
+        "version": "1.0.0.0"
+      }
+    ]
+  }
+]
