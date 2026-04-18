@@ -9,6 +9,14 @@
     "owner": "SirFfej",
     "versions": [
       {
+        "changelog": "v1.0.0.2: Add confirmation popup on test connection. Clarify API key usage.",
+        "checksum": "B2856B6E865BBEE184CF5302336D9615",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.2/Jellyfin.Plugin.Komga_1.0.0.2.zip",
+        "targetAbi": "10.11.8.0",
+        "timestamp": "2026-04-18T17:30:00Z",
+        "version": "1.0.0.2"
+      },
+      {
         "changelog": "v1.0.0.1: Update to Jellyfin 10.11.x ABI. Fix null reference in reading progress sync.",
         "checksum": "7D0EB92FD42FA79D71107344308B7983",
         "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.1/Jellyfin.Plugin.Komga_1.0.0.1.zip",
