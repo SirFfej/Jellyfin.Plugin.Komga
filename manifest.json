@@ -9,6 +9,14 @@
     "owner": "SirFfej",
     "versions": [
       {
+        "changelog": "v1.0.0.3: Fix event listeners to prevent stacking. Add save confirmation popup. Use plugin-specific variable names to avoid conflicts.",
+        "checksum": "016C7475F264D826B57B9BB48688F697",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.3/Jellyfin.Plugin.Komga_1.0.0.3.zip",
+        "targetAbi": "10.11.8.0",
+        "timestamp": "2026-04-18T18:00:00Z",
+        "version": "1.0.0.3"
+      },
+      {
         "changelog": "v1.0.0.2: Add confirmation popup on test connection. Clarify API key usage.",
         "checksum": "B2856B6E865BBEE184CF5302336D9615",
         "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.2/Jellyfin.Plugin.Komga_1.0.0.2.zip",
