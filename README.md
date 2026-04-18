@@ -26,7 +26,7 @@ Integrates Jellyfin with a self-hosted [Komga](https://komga.org) server, allowi
 1. In Jellyfin, go to **Dashboard → Plugins → Repositories**
 2. Click **➕** and paste this URL:
    ```
-   https://raw.githubusercontent.com/SirFfej/Jellyfin.Plugin.Komga/main/manifest.json
+   https://raw.githubusercontent.com/SirFfej/Jellyfin.Plugin.Komga/master/manifest.json
    ```
 3. Go to **Dashboard → Plugins → Catalog**, find **Komga**, and click **Install**
 4. Restart Jellyfin when prompted
