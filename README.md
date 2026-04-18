@@ -21,22 +21,35 @@ Integrates Jellyfin with a self-hosted [Komga](https://komga.org) server, allowi
 
 ## Installation
 
-### Option 1: Pre-built Release (Recommended)
+### Via Jellyfin Plugin Repository (recommended)
 
-1. Download the latest release ZIP from the [Releases](https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases) page
-2. Extract `Jellyfin.Plugin.Komga.dll` to your Jellyfin plugin folder:
+1. In Jellyfin, go to **Dashboard → Plugins → Repositories**
+2. Click **➕** and paste this URL:
+   ```
+   https://raw.githubusercontent.com/SirFfej/Jellyfin.Plugin.Komga/main/manifest.json
+   ```
+3. Go to **Dashboard → Plugins → Catalog**, find **Komga**, and click **Install**
+4. Restart Jellyfin when prompted
+5. Go to **Dashboard → Plugins** and confirm **Komga** appears
+
+### From Source
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/SirFfej/Jellyfin.Plugin.Komga.git
+   cd Jellyfin.Plugin.Komga
+   ```
+
+2. Build the plugin:
+   ```bash
+   dotnet build Jellyfin.Plugin.Komga/Jellyfin.Plugin.Komga.csproj -c Release
+   ```
+
+3. Copy the output DLL to your Jellyfin plugins directory:
    - Windows: `%programdata%\jellyfin\plugins\Komga`
    - Linux/Docker: `/var/lib/jellyfin/plugins/Komga`
-3. Restart Jellyfin
 
-### Option 2: Build from Source
-
-```bash
-git clone https://github.com/SirFfej/Jellyfin.Plugin.Komga.git
-cd Jellyfin.Plugin.Komga/Jellyfin.Plugin.Komga
-dotnet build -c Release
-# Copy the DLL from bin/Release/net9.0/ to your Jellyfin plugins folder
-```
+4. Restart Jellyfin
 
 ## Configuration
 
