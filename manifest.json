@@ -9,6 +9,14 @@
     "owner": "SirFfej",
     "versions": [
       {
+        "changelog": "v1.0.0.6: Fix library selection and config button popups. Add missing Authorization header to API calls. Add loading spinner CSS.",
+        "checksum": "2970192594805278FCD26CB8FFBFD052",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.6/Jellyfin.Plugin.Komga_1.0.0.6.zip",
+        "targetAbi": "10.11.8.0",
+        "timestamp": "2026-04-19T00:00:00Z",
+        "version": "1.0.0.6"
+      },
+      {
         "changelog": "v1.0.0.5: Add library selection UI to config page. Add KomgaCleanupLinksTask to remove stale links. Update config page notifications for Jellyfin 10.11. Filter sync tasks by selected libraries.",
         "checksum": "56C4323791791795BCA1C515BC8FA8A0",
         "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.5/Jellyfin.Plugin.Komga_1.0.0.5.zip",
