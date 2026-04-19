@@ -9,6 +9,14 @@
     "owner": "SirFfej",
     "versions": [
       {
+        "changelog": "v1.0.0.4: Add Clear Saved Credentials button. Fix checkbox visibility with is=emby-checkbox. Add console logging for debugging.",
+        "checksum": "A18CCE5087EC455DFA9644A374CFA1AC",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.4/Jellyfin.Plugin.Komga_1.0.0.4.zip",
+        "targetAbi": "10.11.8.0",
+        "timestamp": "2026-04-18T18:30:00Z",
+        "version": "1.0.0.4"
+      },
+      {
         "changelog": "v1.0.0.3: Fix event listeners to prevent stacking. Add save confirmation popup. Use plugin-specific variable names to avoid conflicts.",
         "checksum": "016C7475F264D826B57B9BB48688F697",
         "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.3/Jellyfin.Plugin.Komga_1.0.0.3.zip",
