@@ -9,6 +9,14 @@
     "owner": "SirFfej",
     "versions": [
       {
+        "changelog": "v1.0.0.10: Simplify endpoint - use Task.Run, temp disable auth for debug.",
+        "checksum": "A698BD38834D5DACBF3CB78EBA3DA7DA",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.10/Jellyfin.Plugin.Komga_1.0.0.10.zip",
+        "targetAbi": "10.11.8.0",
+        "timestamp": "2026-04-19T05:00:00Z",
+        "version": "1.0.0.10"
+      },
+      {
         "changelog": "v1.0.0.9: Fix libraries endpoint 500 error. Robust error handling + better frontend logging.",
         "checksum": "9F739CF08BB15430FB735AC3492FDE3C",
         "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.9/Jellyfin.Plugin.Komga_1.0.0.9.zip",
