@@ -9,6 +9,14 @@
     "owner": "SirFfej",
     "versions": [
       {
+        "changelog": "v1.0.0.14: Fix early loading with global init flag. Add server-side logging. Remove browser console logs.",
+        "checksum": "B0AC0DF0C778EB7C7B3D357428DFE08D",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.14/Jellyfin.Plugin.Komga_1.0.0.14.zip",
+        "targetAbi": "10.11.8.0",
+        "timestamp": "2026-04-19T09:00:00Z",
+        "version": "1.0.0.14"
+      },
+      {
         "changelog": "v1.0.0.13: Fix library parsing case sensitivity. Add page visibility check. Remove duplicate listener.",
         "checksum": "2ACA6C9EBC540F43183800B56666CCEC",
         "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.13/Jellyfin.Plugin.Komga_1.0.0.13.zip",

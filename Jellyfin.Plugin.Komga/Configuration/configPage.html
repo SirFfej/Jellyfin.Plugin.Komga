@@ -151,7 +151,7 @@
     var pageId = 'komgaConfigPage';
     var savedLibraryIds = [];
 
-    console.log('[Komga] Config script loaded');
+    // console.log('[Komga] Config script loaded');
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -211,7 +211,7 @@
         var container = page.querySelector('#komgaLibraryList');
         container.innerHTML = '<p style="color: var(--text-secondary, #888);"><span class="komga-loading-spinner"></span> Loading libraries...</p>';
 
-        console.log('[Komga] Calling /Komga/Libraries');
+        // console.log('[Komga] Calling /Komga/Libraries');
         fetch(ApiClient.getUrl('Komga/Libraries'), {
             method: 'GET',
             headers: {
@@ -220,12 +220,12 @@
             }
         })
         .then(function (r) {
-            console.log('[Komga] Libraries response status:', r.status);
+            // console.log('[Komga] Libraries response status:', r.status);
             if (!r.ok) throw new Error('HTTP ' + r.status);
             return r.json();
         })
         .then(function (data) {
-            console.log('[Komga] Libraries data:', JSON.stringify(data));
+            // console.log('[Komga] Libraries data:', JSON.stringify(data));
             var success = data.success || data.Success;
             var libs = data.libraries || data.Libraries;
             if (!success) {
@@ -239,7 +239,7 @@
             renderLibraryList(page, libraries, savedLibraryIds);
         })
         .catch(function (err) {
-            console.error('[Komga] Failed to load libraries:', err);
+            // console.error('[Komga] Failed to load libraries:', err);
             container.innerHTML = '<p style="color: var(--error-color, red);">Failed to load libraries.</p>';
         });
     }
@@ -247,9 +247,9 @@
     // ── Load config ───────────────────────────────────────────────────────────
 
     function loadConfig(page) {
-        console.log('[Komga] loadConfig called');
+        // console.log('[Komga] loadConfig called');
         ApiClient.getPluginConfiguration(getPluginId()).then(function (config) {
-            console.log('[Komga] Config loaded:', config.KomgaServerUrl ? '(set)' : '(empty)');
+            // console.log('[Komga] Config loaded:', config.KomgaServerUrl ? '(set)' : '(empty)');
             page.querySelector('#komgaServerUrl').value = config.KomgaServerUrl || '';
             page.querySelector('#komgaUsername').value = config.Username || '';
             page.querySelector('#komgaExternalUrl').value = config.KomgaExternalUrl || '';
@@ -259,14 +259,14 @@
             savedLibraryIds = config.IncludedLibraryIds || config.includedLibraryIds || [];
             loadLibraries(page);
         }).catch(function (err) {
-            console.error('[Komga] loadConfig failed:', err);
+            // console.error('[Komga] loadConfig failed:', err);
         });
     }
 
     // ── Save config ───────────────────────────────────────────────────────────
 
     function saveConfig(page) {
-        console.log('[Komga] saveConfig called');
+        // console.log('[Komga] saveConfig called');
         var url = page.querySelector('#komgaServerUrl').value.trim().replace(/\/$/, '');
         var username = page.querySelector('#komgaUsername').value;
         var password = page.querySelector('#komgaPassword').value;
@@ -297,7 +297,7 @@
         })
         .catch(function (err) {
             Dashboard.hideLoadingMsg();
-            console.error('[Komga] saveConfig failed:', err);
+            // console.error('[Komga] saveConfig failed:', err);
             notify('\u274c', 'Failed to save configuration.\n\n(' + err + ')');
         });
     }
@@ -305,7 +305,7 @@
     // ── Test Connection ─────────────────────────────────────────────────────
 
     function testConnection(page) {
-        console.log('[Komga] testConnection called');
+        // console.log('[Komga] testConnection called');
         var url = page.querySelector('#komgaServerUrl').value.replace(/\/$/, '');
         var username = page.querySelector('#komgaUsername').value;
         var password = page.querySelector('#komgaPassword').value;
@@ -324,7 +324,7 @@
             return;
         }
 
-        console.log('[Komga] Calling /Komga/TestConnection with url:', url);
+        // console.log('[Komga] Calling /Komga/TestConnection with url:', url);
         fetch(ApiClient.getUrl('Komga/TestConnection?serverUrl=' + encodeURIComponent(url)), {
             method: 'GET',
             headers: {
@@ -335,11 +335,11 @@
             }
         })
         .then(function (r) {
-            console.log('[Komga] TestConnection response status:', r.status);
+            // console.log('[Komga] TestConnection response status:', r.status);
             return r.json();
         })
         .then(function (data) {
-            console.log('[Komga] TestConnection data:', JSON.stringify(data));
+            // console.log('[Komga] TestConnection data:', JSON.stringify(data));
             btn.disabled = false;
             if (data.success) {
                 status.style.color = 'var(--success-color, green)';
@@ -353,27 +353,28 @@
         })
         .catch(function (err) {
             btn.disabled = false;
-            console.error('[Komga] testConnection error:', err);
+            // console.error('[Komga] testConnection error:', err);
             status.style.color = 'var(--error-color, red)';
             status.textContent = 'Connection failed';
             notify('\u274c', 'Connection failed — check URL and credentials');
         });
     }
 
+    // Prevent multiple initializations - runs once globally
+    if (window._komgaPageInitStarted) {
+        return;
+    }
+    window._komgaPageInitStarted = true;
+
     // Wait for page to be ready - only trigger when page is actually visible
     function waitForPage() {
-        // Check if we're actually on the right page by looking for specific content
         var page = document.getElementById(pageId);
         if (page && page.offsetParent !== null) {
-            console.log('[Komga] Page found and visible');
             setupPage(page);
         } else {
-            console.log('[Komga] Page not visible yet, waiting for viewshow...');
             document.addEventListener('viewshow', function onView() {
                 var p = document.getElementById(pageId);
-                // Verify page is visible (offsetParent check)
                 if (p && p.offsetParent !== null) {
-                    console.log('[Komga] Page now visible via viewshow');
                     document.removeEventListener('viewshow', onView);
                     setupPage(p);
                 }
@@ -381,16 +382,15 @@
         }
     }
 
-    // Delay initial check slightly to ensure DOM is ready
     setTimeout(waitForPage, 0);
 
     function setupPage(page) {
-        console.log('[Komga] setupPage called');
+        // console.log('[Komga] setupPage called');
         // Wire buttons only once — script re-executes on every SPA navigation to this
         // page, so without this guard each visit stacks another click listener onto the
         // same elements, causing one click to fire N handlers and show N popups.
         if (!window._komgaListenersBound) {
-            console.log('[Komga] Binding listeners');
+            // console.log('[Komga] Binding listeners');
             window._komgaListenersBound = true;
 
             page.querySelector('#komgaTestConnection').addEventListener('click', function () {

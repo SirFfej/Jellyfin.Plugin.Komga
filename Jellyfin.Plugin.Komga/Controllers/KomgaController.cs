@@ -65,17 +65,19 @@ public class KomgaController : ControllerBase
 
         try
         {
+            _logger.LogInformation("TestConnection called for {Url}", serverUrl);
             var httpClient = _httpClientFactory.CreateClient(KomgaApiClient.HttpClientName);
             var clientLogger = _loggerFactory.CreateLogger<KomgaApiClient>();
             var client = new KomgaApiClient(httpClient, clientLogger, serverUrl, username, password);
             var ok = await client.TestConnectionAsync(ct).ConfigureAwait(false);
+            _logger.LogInformation("TestConnection result for {Url}: {Result}", serverUrl, ok);
             return Ok(ok
                 ? new TestConnectionResult(true)
                 : new TestConnectionResult(false, "Server responded but credentials were rejected (HTTP 401/403)."));
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "TestConnection failed for {Url}", serverUrl);
+            _logger.LogError(ex, "TestConnection failed for {Url}", serverUrl);
             return Ok(new TestConnectionResult(false, ex.Message));
         }
     }
@@ -181,6 +183,7 @@ public class KomgaController : ControllerBase
                     "book"))
                 .ToList();
 
+            _logger.LogInformation("GetLibraries returned {Count} libraries", libraries.Count);
             return Ok(new GetLibrariesResponse(true, libraries, null));
         }
         catch (Exception ex)
