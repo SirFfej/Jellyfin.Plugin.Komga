@@ -9,6 +9,14 @@
     "owner": "SirFfej",
     "versions": [
       {
+        "changelog": "v1.0.0.15: Fix missing KomgaBook provider ID. Sync task now sets both Komga and KomgaBook IDs.",
+        "checksum": "17982B943441106637D1DE25A96ABF47",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.15/Jellyfin.Plugin.Komga_1.0.0.15.zip",
+        "targetAbi": "10.11.8.0",
+        "timestamp": "2026-04-20T10:00:00Z",
+        "version": "1.0.0.15"
+      },
+      {
         "changelog": "v1.0.0.14: Fix early loading with global init flag. Add server-side logging. Remove browser console logs.",
         "checksum": "B0AC0DF0C778EB7C7B3D357428DFE08D",
         "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.14/Jellyfin.Plugin.Komga_1.0.0.14.zip",
