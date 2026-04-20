@@ -211,6 +211,7 @@
         var container = page.querySelector('#komgaLibraryList');
         container.innerHTML = '<p style="color: var(--text-secondary, #888);"><span class="komga-loading-spinner"></span> Loading libraries...</p>';
 
+        console.log('[Komga] Calling /Komga/Libraries');
         fetch(ApiClient.getUrl('Komga/Libraries'), {
             method: 'GET',
             headers: {
@@ -218,8 +219,17 @@
                 'Authorization': 'MediaBrowser Token="' + getJellyfinToken() + '"'
             }
         })
-        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (r) {
+            console.log('[Komga] Libraries response status:', r.status);
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
         .then(function (data) {
+            console.log('[Komga] Libraries data:', JSON.stringify(data));
+            if (!data.success) {
+                container.innerHTML = '<p style="color: var(--error-color, red);">Error: ' + (data.error || 'Unknown error') + '</p>';
+                return;
+            }
             var libraries = (data.libraries || data.Libraries || []).filter(function (l) {
                 var mt = (l.MediaType || l.mediaType || '').toLowerCase();
                 return mt === 'book' || mt === '';
@@ -343,29 +353,28 @@
         });
     }
 
-    // Attach listeners immediately — the script tag is inside data-role="page" so all
-    // sibling elements exist when this runs.
-    // Use currentScript.closest() as primary lookup (works even if getElementById fails
-    // in Jellyfin's SPA context), falling back to getElementById.
-    (function init() {
-        console.log('[Komga] init called');
-        var page = (document.currentScript && document.currentScript.closest('[data-role="page"]'))
-                   || document.getElementById(pageId);
-        console.log('[Komga] page element:', page);
-        if (!page) {
-            // Absolute last resort: wait for Jellyfin SPA to fire viewshow
+    // Wait for page to be ready - use MutationObserver as belt-and-suspenders
+    // because currentScript.closest() may not work in all Jellyfin SPA versions
+    function waitForPage() {
+        var page = document.getElementById(pageId);
+        if (page) {
+            console.log('[Komga] Page found via getElementById');
+            setupPage(page);
+        } else {
+            console.log('[Komga] Page not found, waiting for viewshow...');
             document.addEventListener('viewshow', function onView() {
                 var p = document.getElementById(pageId);
-                if (!p) return;
-                console.log('[Komga] viewshow fired, page:', p);
-                document.removeEventListener('viewshow', onView);
-                setupPage(p);
+                if (p) {
+                    console.log('[Komga] Page found via viewshow');
+                    document.removeEventListener('viewshow', onView);
+                    setupPage(p);
+                }
             });
-            return;
         }
+    }
 
-        setupPage(page);
-    }());
+    // Try immediately first
+    waitForPage();
 
     function setupPage(page) {
         console.log('[Komga] setupPage called');

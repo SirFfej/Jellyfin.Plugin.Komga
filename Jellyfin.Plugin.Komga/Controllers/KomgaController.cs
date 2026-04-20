@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Komga.Api;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -19,15 +23,17 @@ public class KomgaController : ControllerBase
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<KomgaController> _logger;
+    private readonly ILibraryManager _libraryManager;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="KomgaController"/> class.
     /// </summary>
-    public KomgaController(IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory)
+    public KomgaController(IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory, ILibraryManager libraryManager)
     {
         _httpClientFactory = httpClientFactory;
         _loggerFactory = loggerFactory;
         _logger = loggerFactory.CreateLogger<KomgaController>();
+        _libraryManager = libraryManager;
     }
 
     /// <summary>
@@ -156,6 +162,84 @@ public class KomgaController : ControllerBase
 
         return Content(Script, "application/javascript");
     }
+
+    /// <summary>
+    /// Gets the Jellyfin libraries that can be linked with Komga.
+    /// Returns book libraries.
+    /// </summary>
+    [HttpGet("Libraries")]
+    [Authorize(Policy = "DefaultAuthorization")]
+    public ActionResult<GetLibrariesResponse> GetLibraries()
+    {
+        try
+        {
+            var libraries = new List<LibraryDto>();
+
+            try
+            {
+                var virtualFolders = _libraryManager.GetVirtualFolders();
+                if (virtualFolders != null)
+                {
+                    foreach (var lf in virtualFolders)
+                    {
+                        try
+                        {
+                            var collectionType = lf.CollectionType?.ToString() ?? string.Empty;
+                            var isBook = collectionType.Contains("book", StringComparison.OrdinalIgnoreCase)
+                                      || string.IsNullOrEmpty(collectionType);
+
+                            if (isBook)
+                            {
+                                libraries.Add(new LibraryDto(
+                                    lf.ItemId.ToString(),
+                                    lf.Name ?? "Unknown",
+                                    "book"));
+                            }
+                        }
+                        catch (Exception innerEx)
+                        {
+                            _logger.LogWarning(innerEx, "Failed to process virtual folder {FolderName}", lf.Name);
+                        }
+                    }
+                }
+            }
+            catch (Exception fetchEx)
+            {
+                _logger.LogWarning(fetchEx, "Failed to get virtual folders");
+            }
+
+            return Ok(new GetLibrariesResponse(true, libraries));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get Jellyfin libraries");
+            return StatusCode(500, new GetLibrariesResponse(false, null, ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Gets all Jellyfin library IDs of type "book".
+    /// Used by sync tasks to get available library IDs.
+    /// </summary>
+    [HttpGet("LibraryIds")]
+    [Authorize(Policy = "DefaultAuthorization")]
+    public ActionResult<GetLibraryIdsResponse> GetLibraryIds()
+    {
+        try
+        {
+            var ids = _libraryManager.GetVirtualFolders()
+                .Where(lf => lf.CollectionType.HasValue && lf.CollectionType.Value.ToString().Contains("book", StringComparison.OrdinalIgnoreCase))
+                .Select(lf => lf.ItemId.ToString())
+                .ToList();
+
+            return Ok(new GetLibraryIdsResponse(ids));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get library IDs");
+            return Ok(new GetLibraryIdsResponse(new List<string>()));
+        }
+    }
 }
 
 /// <summary>Result returned by <c>GET /Komga/TestConnection</c>.</summary>
@@ -163,3 +247,12 @@ public record TestConnectionResult(bool Success, string? Error = null);
 
 /// <summary>Result returned by <c>GET /Komga/Config</c>.</summary>
 public record KomgaConfigResult(string ExternalUrl);
+
+/// <summary>Response for <c>GET /Komga/Libraries</c>.</summary>
+public record GetLibrariesResponse(bool Success, List<LibraryDto>? Libraries = null, string? Error = null);
+
+/// <summary>DTO for a Jellyfin library.</summary>
+public record LibraryDto(string Id, string Name, string MediaType);
+
+/// <summary>Response for <c>GET /Komga/LibraryIds</c>.</summary>
+public record GetLibraryIdsResponse(List<string> LibraryIds);
