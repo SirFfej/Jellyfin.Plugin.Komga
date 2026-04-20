@@ -226,11 +226,13 @@
         })
         .then(function (data) {
             console.log('[Komga] Libraries data:', JSON.stringify(data));
-            if (!data.success) {
-                container.innerHTML = '<p style="color: var(--error-color, red);">Error: ' + (data.error || 'Unknown error') + '</p>';
+            var success = data.success || data.Success;
+            var libs = data.libraries || data.Libraries;
+            if (!success) {
+                container.innerHTML = '<p style="color: var(--error-color, red);">Error: ' + (data.error || data.Error || 'Unknown error') + '</p>';
                 return;
             }
-            var libraries = (data.libraries || data.Libraries || []).filter(function (l) {
+            var libraries = (libs || []).filter(function (l) {
                 var mt = (l.MediaType || l.mediaType || '').toLowerCase();
                 return mt === 'book' || mt === '';
             });
@@ -358,19 +360,20 @@
         });
     }
 
-    // Wait for page to be ready - use MutationObserver as belt-and-suspenders
-    // because currentScript.closest() may not work in all Jellyfin SPA versions
+    // Wait for page to be ready - only trigger when page is actually visible
     function waitForPage() {
+        // Check if we're actually on the right page by looking for specific content
         var page = document.getElementById(pageId);
-        if (page) {
-            console.log('[Komga] Page found via getElementById');
+        if (page && page.offsetParent !== null) {
+            console.log('[Komga] Page found and visible');
             setupPage(page);
         } else {
-            console.log('[Komga] Page not found, waiting for viewshow...');
+            console.log('[Komga] Page not visible yet, waiting for viewshow...');
             document.addEventListener('viewshow', function onView() {
                 var p = document.getElementById(pageId);
-                if (p) {
-                    console.log('[Komga] Page found via viewshow');
+                // Verify page is visible (offsetParent check)
+                if (p && p.offsetParent !== null) {
+                    console.log('[Komga] Page now visible via viewshow');
                     document.removeEventListener('viewshow', onView);
                     setupPage(p);
                 }
@@ -378,8 +381,8 @@
         }
     }
 
-    // Try immediately first
-    waitForPage();
+    // Delay initial check slightly to ensure DOM is ready
+    setTimeout(waitForPage, 0);
 
     function setupPage(page) {
         console.log('[Komga] setupPage called');
@@ -399,14 +402,11 @@
                 saveConfig(page);
             });
 
-            // Reload config on every SPA return visit (element-level pageshow).
+            // Only reload config on this specific page's pageshow
             page.addEventListener('pageshow', function () { loadConfig(page); });
-
-            // Document-level pageshow as belt-and-suspenders for some Jellyfin SPA versions.
-            document.addEventListener('pageshow', function () { loadConfig(page); });
         }
 
-        // Always load config on the initial render of this script execution.
+        // Load config when page setup runs
         loadConfig(page);
     }
 

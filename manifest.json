@@ -9,6 +9,14 @@
     "owner": "SirFfej",
     "versions": [
       {
+        "changelog": "v1.0.0.13: Fix library parsing case sensitivity. Add page visibility check. Remove duplicate listener.",
+        "checksum": "2ACA6C9EBC540F43183800B56666CCEC",
+        "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.13/Jellyfin.Plugin.Komga_1.0.0.13.zip",
+        "targetAbi": "10.11.8.0",
+        "timestamp": "2026-04-19T08:00:00Z",
+        "version": "1.0.0.13"
+      },
+      {
         "changelog": "v1.0.0.12: Add console logging to both TestConnection and Libraries endpoints for debugging.",
         "checksum": "7A3ED3910A56CA3B9DA6FA736EE882AE",
         "sourceUrl": "https://github.com/SirFfej/Jellyfin.Plugin.Komga/releases/download/v1.0.0.12/Jellyfin.Plugin.Komga_1.0.0.12.zip",
