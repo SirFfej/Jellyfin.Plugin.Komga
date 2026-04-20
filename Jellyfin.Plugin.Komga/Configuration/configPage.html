@@ -322,6 +322,7 @@
             return;
         }
 
+        console.log('[Komga] Calling /Komga/TestConnection with url:', url);
         fetch(ApiClient.getUrl('Komga/TestConnection?serverUrl=' + encodeURIComponent(url)), {
             method: 'GET',
             headers: {
@@ -331,8 +332,12 @@
                 'X-Komga-Password': password
             }
         })
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+            console.log('[Komga] TestConnection response status:', r.status);
+            return r.json();
+        })
         .then(function (data) {
+            console.log('[Komga] TestConnection data:', JSON.stringify(data));
             btn.disabled = false;
             if (data.success) {
                 status.style.color = 'var(--success-color, green)';
