@@ -46,7 +46,7 @@ public class KomgaController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A <see cref="TestConnectionResult"/> indicating success or the error message.</returns>
     [HttpGet("TestConnection")]
-    [Authorize(Policy = "DefaultAuthorization")]
+    //[Authorize(Policy = "DefaultAuthorization")]
     public async Task<ActionResult<TestConnectionResult>> TestConnection(
         [FromQuery] string serverUrl,
         [FromHeader(Name = "X-Komga-Username")] string username,
@@ -168,41 +168,25 @@ public class KomgaController : ControllerBase
     /// Returns book libraries.
     /// </summary>
     [HttpGet("Libraries")]
-    //[Authorize(Policy = "Default")]  // Temp disabled for debug
-    public async Task<ActionResult> GetLibraries()
+    //[Authorize(Policy = "Default")]
+    public ActionResult<GetLibrariesResponse> GetLibraries()
     {
         try
         {
-            var libraries = new List<LibraryDto>();
+            var libraries = _libraryManager.GetVirtualFolders()
+                .Where(lf => lf.CollectionType == CollectionTypeOptions.books)
+                .Select(lf => new LibraryDto(
+                    lf.ItemId.ToString(),
+                    lf.Name ?? string.Empty,
+                    "book"))
+                .ToList();
 
-            await Task.Run(() =>
-            {
-                try
-                {
-                    var virtualFolders = _libraryManager.GetVirtualFolders();
-                    if (virtualFolders != null)
-                    {
-                        foreach (var lf in virtualFolders)
-                        {
-                            libraries.Add(new LibraryDto(
-                                lf.ItemId.ToString(),
-                                lf.Name ?? "Unknown",
-                                lf.CollectionType?.ToString() ?? "book"));
-                        }
-                    }
-                }
-                catch (Exception fetchEx)
-                {
-                    _logger.LogWarning(fetchEx, "Failed in GetVirtualFolders");
-                }
-            });
-
-            return Ok(new GetLibrariesResponse(true, libraries));
+            return Ok(new GetLibrariesResponse(true, libraries, null));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "GetLibraries failed");
-            return Ok(new GetLibrariesResponse(false, null, ex.Message));
+            _logger.LogError(ex, "Failed to get Jellyfin libraries");
+            return Ok(new GetLibrariesResponse(false, null, "Failed to fetch libraries"));
         }
     }
 
