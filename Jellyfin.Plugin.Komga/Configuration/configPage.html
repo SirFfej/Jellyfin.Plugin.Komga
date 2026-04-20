@@ -6,7 +6,26 @@
 </head>
 <body>
 
-<div id="komgaConfigPage" data-role="page" class="page type-interior pluginConfigurationPage">
+<div data-role="page" class="page type-interior withTabs" id="komgaConfigPage">
+
+    <!--
+        Styles live INSIDE data-role="page" because Jellyfin's SPA only injects
+        that element into the view; the <head> is never parsed by the browser.
+    -->
+    <style>
+        .komga-loading-spinner {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: var(--accent-color, #00a0dc);
+            border-radius: 50%;
+            animation: komga-loading-spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes komga-loading-spin { to { transform: rotate(360deg); } }
+    </style>
+
     <div data-role="content">
         <div class="content-primary">
 
@@ -62,11 +81,11 @@
                 </div>
 
                 <!-- Test Connection -->
-                <div class="inputContainer">
+                <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                     <button is="emby-button" type="button" id="komgaTestConnection" class="raised emby-button">
                         <span>Test Connection</span>
                     </button>
-                    <span id="komgaConnectionStatus" style="margin-left: 12px; color: var(--text-color-secondary);"></span>
+                    <span id="komgaConnectionStatus" style="color: var(--text-color-secondary);"></span>
                 </div>
 
                 <div class="verticalSection">
@@ -124,207 +143,263 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-        var KomgaConfigurationPage = {
-            pluginUniqueId: "b3c4d5e6-a1f0-4c9d-8e7b-6a9e8d4f3c2b",
+<script type="text/javascript">
+(function () {
+    'use strict';
 
-            getPluginId: function() {
-                try { return (Plugin && Plugin.Instance && Plugin.Instance.Id) || this.pluginUniqueId; }
-                catch (e) { return this.pluginUniqueId; }
-            },
+    var pluginGuid = 'b3c4d5e6-a1f0-4c9d-8e7b-6a9e8d4f3c2b';
+    var pageId = 'komgaConfigPage';
+    var savedLibraryIds = [];
 
-            getJellyfinToken: function() {
-                try { return typeof ApiClient.accessToken === 'function' ? ApiClient.accessToken() : ''; }
-                catch (e) { return ''; }
-            },
+    console.log('[Komga] Config script loaded');
 
-            esc: function(str) {
-                return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-            },
+    // ── Helpers ─────────────────────────────────────────────────────────────
 
-            renderLibraryList: function(page, libraries, selectedIds) {
-                var container = page.querySelector('#komgaLibraryList');
-                if (!libraries || libraries.length === 0) {
-                    container.innerHTML = '<p style="color: var(--text-secondary, #888);">No book libraries found on this server.</p>';
-                    return;
-                }
+    function getPluginId() {
+        try { return (Plugin && Plugin.Instance && Plugin.Instance.Id) || pluginGuid; }
+        catch (e) { return pluginGuid; }
+    }
 
-                var html = '<p class="fieldDescription" style="margin-bottom: 8px;">Select which libraries to sync. Leave all unchecked to sync all.</p>';
-                html += '<div style="display: flex; flex-direction: column; gap: 6px;">';
+    function getJellyfinToken() {
+        try { return typeof ApiClient.accessToken === 'function' ? ApiClient.accessToken() : ''; }
+        catch (e) { return ''; }
+    }
 
-                libraries.forEach(function (lib) {
-                    var isSelected = selectedIds.length === 0 || selectedIds.includes(lib.Id || lib.id);
-                    var mediaType = (lib.MediaType || lib.mediaType || 'book').toLowerCase();
-                    var typeIcon = mediaType === 'book' ? '\u{1F4DA}' : mediaType === 'audio' ? '\u{1F3B5}' : '\u{1F4C1}';
-                    var typeLabel = mediaType === 'book' ? 'Book' : mediaType === 'audio' ? 'Audio' : 'Other';
+    function esc(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
-                    html += '<label style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--border-color, #ddd); border-radius: 4px; cursor: pointer;">';
-                    html += '<input type="checkbox" class="komga-library-checkbox" value="' + this.esc(lib.Id || lib.id) + '" data-mediatype="' + this.esc(mediaType) + '" ' + (isSelected ? 'checked' : '') + ' />';
-                    html += '<span>' + typeIcon + ' ' + this.esc(lib.Name || lib.name) + '</span>';
-                    html += '<span style="color: var(--text-secondary, #888); font-size: 12px;">(' + typeLabel + ')</span>';
-                    html += '</label>';
-                }.bind(this));
+    // ── Notify ─────────────────────────────────────────────────────────────
 
-                html += '</div>';
-                html += '<p style="color: var(--text-secondary, #888); font-size: 12px; margin-top: 8px;">Leave all unchecked to sync all available libraries.</p>';
-                container.innerHTML = html;
-            },
+    function notify(title, message) {
+        Dashboard.alert({ title: title, message: message });
+    }
 
-            loadLibraries: function(page, selectedIds) {
-                var container = page.querySelector('#komgaLibraryList');
-                var self = this;
+    // ── Library selection ─────────────────────────────────────────────────────
 
-                fetch(ApiClient.getUrl('Komga/Libraries'), {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Authorization': 'MediaBrowser Token="' + this.getJellyfinToken() + '"'
-                    }
-                })
-                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-                .then(function (data) {
-                    var libraries = (data.libraries || data.Libraries || []).filter(function (l) {
-                        var mt = (l.MediaType || l.mediaType || '').toLowerCase();
-                        return mt === 'book' || mt === '';
-                    });
-                    self.renderLibraryList(page, libraries, selectedIds);
-                })
-                .catch(function (err) {
-                    console.error('[Komga] Failed to load libraries:', err);
-                    container.innerHTML = '<p style="color: var(--error-color, red);">Failed to load libraries. Check API endpoint.</p>';
-                });
-            },
+    function renderLibraryList(page, libraries, selectedIds) {
+        var container = page.querySelector('#komgaLibraryList');
+        if (!libraries || libraries.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary, #888);">No book libraries found on this server.</p>';
+            return;
+        }
 
-            loadConfiguration: function () {
-                var page = document.getElementById('komgaConfigPage');
-                var self = this;
+        var html = '<p class="fieldDescription" style="margin-bottom: 8px;">Select which libraries to sync. Leave all unchecked to sync all.</p>';
+        html += '<div style="display: flex; flex-direction: column; gap: 6px;">';
 
-                Dashboard.showLoadingMsg();
+        libraries.forEach(function (lib) {
+            var isSelected = selectedIds.length === 0 || selectedIds.includes(lib.Id || lib.id);
+            var mediaType = (lib.MediaType || lib.mediaType || 'book').toLowerCase();
+            var typeIcon = mediaType === 'book' ? '\u{1F4DA}' : mediaType === 'audio' ? '\u{1F3B5}' : '\u{1F4C1}';
+            var typeLabel = mediaType === 'book' ? 'Book' : mediaType === 'audio' ? 'Audio' : 'Other';
 
-                ApiClient.getPluginConfiguration(this.getPluginId()).then(function (config) {
-                    console.log('[Komga] loadConfig:', JSON.stringify({
-                        serverUrl: config.KomgaServerUrl,
-                        username: config.Username ? '(set)' : '(empty)',
-                        hasPassword: !!config.Password,
-                        externalUrl: config.KomgaExternalUrl
-                    }));
-                    document.getElementById('komgaServerUrl').value = config.KomgaServerUrl || '';
-                    document.getElementById('komgaUsername').value = config.Username || '';
-                    document.getElementById('komgaExternalUrl').value = config.KomgaExternalUrl || '';
-                    document.getElementById('komgaEnableMetadata').checked = config.EnableMetadataProvider !== false;
-                    document.getElementById('komgaEnableProgressSync').checked = config.EnableReadingProgressSync !== false;
-
-                    var savedLibraryIds = config.IncludedLibraryIds || config.includedLibraryIds || [];
-                    self.loadLibraries(page, savedLibraryIds);
-
-                    Dashboard.hideLoadingMsg();
-                });
-            },
-
-            saveConfiguration: function () {
-                var page = document.getElementById('komgaConfigPage');
-
-                var url = document.getElementById('komgaServerUrl').value.trim().replace(/\/$/, '');
-                var username = document.getElementById('komgaUsername').value;
-                var password = document.getElementById('komgaPassword').value;
-                var externalUrl = document.getElementById('komgaExternalUrl').value.replace(/\/$/, '');
-
-                var checkboxes = page.querySelectorAll('.komga-library-checkbox');
-                var selectedIds = [];
-                checkboxes.forEach(function (cb) {
-                    if (cb.checked) selectedIds.push(cb.value);
-                });
-
-                Dashboard.showLoadingMsg();
-
-                ApiClient.getPluginConfiguration(this.getPluginId()).then(function (config) {
-                    config.KomgaServerUrl = url;
-                    config.Username = username;
-                    config.Password = password;
-                    config.KomgaExternalUrl = externalUrl;
-                    config.EnableMetadataProvider = document.getElementById('komgaEnableMetadata').checked;
-                    config.EnableReadingProgressSync = document.getElementById('komgaEnableProgressSync').checked;
-                    config.IncludedLibraryIds = selectedIds;
-
-                    return ApiClient.updatePluginConfiguration(this.getPluginId(), config);
-                }.bind(this))
-                .then(function (result) {
-                    Dashboard.processPluginConfigurationUpdateResult(result);
-                })
-                .catch(function (err) {
-                    Dashboard.hideLoadingMsg();
-                    console.error('[Komga] saveConfig failed:', err);
-                    alert('Failed to save configuration: ' + err);
-                });
-            },
-
-            testConnection: function () {
-                var page = document.getElementById('komgaConfigPage');
-                var url = document.getElementById('komgaServerUrl').value.replace(/\/$/, '');
-                var username = document.getElementById('komgaUsername').value;
-                var password = document.getElementById('komgaPassword').value;
-                var status = document.getElementById('komgaConnectionStatus');
-                var btn = document.getElementById('komgaTestConnection');
-
-                status.textContent = 'Testing...';
-                status.style.color = '';
-                btn.disabled = true;
-
-                if (!url || !username || !password) {
-                    status.textContent = 'Server URL, username, and password are required';
-                    status.style.color = 'var(--error-color, red)';
-                    btn.disabled = false;
-                    alert('Server URL, username, and password are required.');
-                    return;
-                }
-
-                fetch(ApiClient.getUrl('Komga/TestConnection?serverUrl=' + encodeURIComponent(url)), {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Authorization': 'MediaBrowser Token="' + this.getJellyfinToken() + '"',
-                        'X-Komga-Username': username,
-                        'X-Komga-Password': password
-                    }
-                })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    btn.disabled = false;
-                    if (data.success) {
-                        status.style.color = 'var(--success-color, green)';
-                        status.textContent = 'Connected';
-                        alert('Connected to Komga server');
-                    } else {
-                        status.style.color = 'var(--error-color, red)';
-                        status.textContent = data.error || 'Connection failed';
-                        alert(data.error || 'Connection failed');
-                    }
-                })
-                .catch(function (err) {
-                    btn.disabled = false;
-                    console.error('[Komga] testConnection error:', err);
-                    status.style.color = 'var(--error-color, red)';
-                    status.textContent = 'Connection failed';
-                    alert('Connection failed — check URL and credentials');
-                });
-            },
-        };
-
-        // Bind event listeners
-        document.getElementById('komgaConfigPage').addEventListener('pageshow', function () {
-            KomgaConfigurationPage.loadConfiguration();
+            html += '<label style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--border-color, #ddd); border-radius: 4px; cursor: pointer;">';
+            html += '<input type="checkbox" class="komga-library-checkbox" value="' + esc(lib.Id || lib.id) + '" data-mediatype="' + esc(mediaType) + '" ' + (isSelected ? 'checked' : '') + ' />';
+            html += '<span>' + typeIcon + ' ' + esc(lib.Name || lib.name) + '</span>';
+            html += '<span style="color: var(--text-secondary, #888); font-size: 12px;">(' + typeLabel + ')</span>';
+            html += '</label>';
         });
 
-        document.getElementById('komgaConfigForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            KomgaConfigurationPage.saveConfiguration();
+        html += '</div>';
+        html += '<p style="color: var(--text-secondary, #888); font-size: 12px; margin-top: 8px;">Leave all unchecked to sync all available libraries.</p>';
+        container.innerHTML = html;
+    }
+
+    function loadLibraries(page) {
+        var container = page.querySelector('#komgaLibraryList');
+        container.innerHTML = '<p style="color: var(--text-secondary, #888);"><span class="komga-loading-spinner"></span> Loading libraries...</p>';
+
+        fetch(ApiClient.getUrl('Komga/Libraries'), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'MediaBrowser Token="' + getJellyfinToken() + '"'
+            }
+        })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (data) {
+            var libraries = (data.libraries || data.Libraries || []).filter(function (l) {
+                var mt = (l.MediaType || l.mediaType || '').toLowerCase();
+                return mt === 'book' || mt === '';
+            });
+            renderLibraryList(page, libraries, savedLibraryIds);
+        })
+        .catch(function (err) {
+            console.error('[Komga] Failed to load libraries:', err);
+            container.innerHTML = '<p style="color: var(--error-color, red);">Failed to load libraries.</p>';
+        });
+    }
+
+    // ── Load config ───────────────────────────────────────────────────────────
+
+    function loadConfig(page) {
+        console.log('[Komga] loadConfig called');
+        ApiClient.getPluginConfiguration(getPluginId()).then(function (config) {
+            console.log('[Komga] Config loaded:', config.KomgaServerUrl ? '(set)' : '(empty)');
+            page.querySelector('#komgaServerUrl').value = config.KomgaServerUrl || '';
+            page.querySelector('#komgaUsername').value = config.Username || '';
+            page.querySelector('#komgaExternalUrl').value = config.KomgaExternalUrl || '';
+            page.querySelector('#komgaEnableMetadata').checked = config.EnableMetadataProvider !== false;
+            page.querySelector('#komgaEnableProgressSync').checked = config.EnableReadingProgressSync !== false;
+
+            savedLibraryIds = config.IncludedLibraryIds || config.includedLibraryIds || [];
+            loadLibraries(page);
+        }).catch(function (err) {
+            console.error('[Komga] loadConfig failed:', err);
+        });
+    }
+
+    // ── Save config ───────────────────────────────────────────────────────────
+
+    function saveConfig(page) {
+        console.log('[Komga] saveConfig called');
+        var url = page.querySelector('#komgaServerUrl').value.trim().replace(/\/$/, '');
+        var username = page.querySelector('#komgaUsername').value;
+        var password = page.querySelector('#komgaPassword').value;
+        var externalUrl = page.querySelector('#komgaExternalUrl').value.replace(/\/$/, '');
+
+        var checkboxes = page.querySelectorAll('.komga-library-checkbox');
+        var selectedIds = [];
+        checkboxes.forEach(function (cb) {
+            if (cb.checked) selectedIds.push(cb.value);
         });
 
-        document.getElementById('komgaTestConnection').addEventListener('click', function () {
-            KomgaConfigurationPage.testConnection();
+        Dashboard.showLoadingMsg();
+
+        ApiClient.getPluginConfiguration(getPluginId()).then(function (config) {
+            config.KomgaServerUrl = url;
+            config.Username = username;
+            config.Password = password;
+            config.KomgaExternalUrl = externalUrl;
+            config.EnableMetadataProvider = page.querySelector('#komgaEnableMetadata').checked;
+            config.EnableReadingProgressSync = page.querySelector('#komgaEnableProgressSync').checked;
+            config.IncludedLibraryIds = selectedIds;
+
+            return ApiClient.updatePluginConfiguration(getPluginId(), config);
+        })
+        .then(function (result) {
+            Dashboard.processPluginConfigurationUpdateResult(result);
+            notify('\u2705', 'Configuration saved successfully.');
+        })
+        .catch(function (err) {
+            Dashboard.hideLoadingMsg();
+            console.error('[Komga] saveConfig failed:', err);
+            notify('\u274c', 'Failed to save configuration.\n\n(' + err + ')');
         });
-    </script>
-</div>
+    }
+
+    // ── Test Connection ─────────────────────────────────────────────────────
+
+    function testConnection(page) {
+        console.log('[Komga] testConnection called');
+        var url = page.querySelector('#komgaServerUrl').value.replace(/\/$/, '');
+        var username = page.querySelector('#komgaUsername').value;
+        var password = page.querySelector('#komgaPassword').value;
+        var status = page.querySelector('#komgaConnectionStatus');
+        var btn = page.querySelector('#komgaTestConnection');
+
+        status.textContent = 'Testing...';
+        status.style.color = '';
+        btn.disabled = true;
+
+        if (!url || !username || !password) {
+            status.textContent = 'Server URL, username, and password are required';
+            status.style.color = 'var(--error-color, red)';
+            btn.disabled = false;
+            notify('\u26A0\uFE0F', 'Server URL, username, and password are required.');
+            return;
+        }
+
+        fetch(ApiClient.getUrl('Komga/TestConnection?serverUrl=' + encodeURIComponent(url)), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': 'MediaBrowser Token="' + getJellyfinToken() + '"',
+                'X-Komga-Username': username,
+                'X-Komga-Password': password
+            }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            btn.disabled = false;
+            if (data.success) {
+                status.style.color = 'var(--success-color, green)';
+                status.textContent = 'Connected';
+                notify('\u2705', 'Connected to Komga server');
+            } else {
+                status.style.color = 'var(--error-color, red)';
+                status.textContent = data.error || 'Connection failed';
+                notify('\u274c', data.error || 'Connection failed');
+            }
+        })
+        .catch(function (err) {
+            btn.disabled = false;
+            console.error('[Komga] testConnection error:', err);
+            status.style.color = 'var(--error-color, red)';
+            status.textContent = 'Connection failed';
+            notify('\u274c', 'Connection failed — check URL and credentials');
+        });
+    }
+
+    // Attach listeners immediately — the script tag is inside data-role="page" so all
+    // sibling elements exist when this runs.
+    // Use currentScript.closest() as primary lookup (works even if getElementById fails
+    // in Jellyfin's SPA context), falling back to getElementById.
+    (function init() {
+        console.log('[Komga] init called');
+        var page = (document.currentScript && document.currentScript.closest('[data-role="page"]'))
+                   || document.getElementById(pageId);
+        console.log('[Komga] page element:', page);
+        if (!page) {
+            // Absolute last resort: wait for Jellyfin SPA to fire viewshow
+            document.addEventListener('viewshow', function onView() {
+                var p = document.getElementById(pageId);
+                if (!p) return;
+                console.log('[Komga] viewshow fired, page:', p);
+                document.removeEventListener('viewshow', onView);
+                setupPage(p);
+            });
+            return;
+        }
+
+        setupPage(page);
+    }());
+
+    function setupPage(page) {
+        console.log('[Komga] setupPage called');
+        // Wire buttons only once — script re-executes on every SPA navigation to this
+        // page, so without this guard each visit stacks another click listener onto the
+        // same elements, causing one click to fire N handlers and show N popups.
+        if (!window._komgaListenersBound) {
+            console.log('[Komga] Binding listeners');
+            window._komgaListenersBound = true;
+
+            page.querySelector('#komgaTestConnection').addEventListener('click', function () {
+                testConnection(page);
+            });
+
+            page.querySelector('#komgaConfigForm').addEventListener('submit', function (ev) {
+                ev.preventDefault();
+                saveConfig(page);
+            });
+
+            // Reload config on every SPA return visit (element-level pageshow).
+            page.addEventListener('pageshow', function () { loadConfig(page); });
+
+            // Document-level pageshow as belt-and-suspenders for some Jellyfin SPA versions.
+            document.addEventListener('pageshow', function () { loadConfig(page); });
+        }
+
+        // Always load config on the initial render of this script execution.
+        loadConfig(page);
+    }
+
+}());
+</script>
+
+</div><!-- end data-role="page" -->
 
 </body>
 </html>
